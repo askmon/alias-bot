@@ -8,10 +8,26 @@ async   = require('async')
 config  = require('../src/config')(configHelper)
 childProcess = require('child_process')
 
-# TQT
-module_tqt = require './tqt'
-tqt = module_tqt async, config, childProcess
+#db
+module_db = require './db'
+db = module_db config
 
+#groups
+module_groups = require './groups'
+db = module_groups config
+
+regexExpression = /^\@.*/gi
+regex = new RegExp(regexExpression)
+
+getMentions = (text) ->
+  textArray = []
+  if text?
+    textArray = text.split " "
+  mentionsArray = []
+  for word in textArray
+    if word.match regex
+      mentionsArray.push word
+  return mentionsArray
 
 module.exports = (callback) ->
 
@@ -63,12 +79,8 @@ module.exports = (callback) ->
     if type is 'message' and channel?
 
       channel.send "Ok, I am working on `$ #{text}`..."
-
-      tqt.execute text, (err, result) ->
-        if err
-          channel.send "Error executing tqt command `$ #{text}`: ```#{err}```"
-        else
-          channel.send "Here is the result for `$ #{text}` \n\n ```#{result}```"
+      mentions = getMentions text
+      selfMentionResponse = groups.selfMentionResponse mentions, "@#{slack.self.name}", text
 
   slack.on 'error', (error) ->
     console.error "Error: #{error}"
